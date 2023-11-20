@@ -1,28 +1,36 @@
 # CONSULTAS BASE DE DATOS JARDINERIA
 
 ## MODELO FISICO 
+
 ![ModeloFisico](modeloFisico.png)
 
 ## BASE DE DATOS `jardineria`
+
 ### Instrucciones de implementacion de la base de datos sobre la que se trabajaran las consultas
 
 ## 1. Conectar al Servidor de Base de Datos
 
 Abre un cliente de línea de comandos o una interfaz gráfica que te permita conectarte a tu servidor de bases de datos MySQL o MariaDB.
 
-`mysql -u tu_usuario -p`
+```
+mysql -u tu_usuario -p
+```
 
 Reemplaza tu_usuario con el nombre de usuario de tu base de datos.
 
 ## 2. Crear la Base de Datos
 
-`CREATE DATABASE nombre_de_tu_base_de_datos;`
+```
+CREATE DATABASE nombre_de_tu_base_de_datos;
+```
 
 Reemplaza nombre_de_tu_base_de_datos con el nombre que desees para tu base de datos.
 
 ## 3. Seleccionar la Base de Datos
 
-`USE nombre_de_tu_base_de_datos;`
+```
+USE nombre_de_tu_base_de_datos;
+```
 
 Esto te permitirá ejecutar comandos dentro de esa base de datos.
 
@@ -941,4 +949,224 @@ Puedes copiar el script contenido dentro `jardineria.sql` y pegarlo en tu consol
    
    ```
 
+## Consultas Video
+
+### 5 Tips GROUP BY 
+
+1. Devuelve la gama y la cantidad de productos que existen por cada gama
+
+   ```sql
+   SELECT p.gama, COUNT(*) AS cantidad 
+   FROM producto p
+   JOIN gama_producto g ON p.gama = g.gama
+   GROUP BY p.gama;
+   ```
+
+2. Devuelve el proveedor con tipos de gamas que surte y que la cantidad de productos que sure sea mayor a 50 productos 
+
+   ```sql
+   SELECT p.proveedor, p.gama, COUNT(*) AS cantidad
+   FROM producto p
+   JOIN gama_producto g ON p.gama = g.gama
+   GROUP BY p.proveedor, p.gama
+   HAVING COUNT(*) > 50;
+   ```
+
+3. Devuelve la cantidad de productos que existen por la primera letra del nombre del producto y ordenelos en orden alfabetico:
+
+   ```sql
+   SELECT SUBSTRING(p.nombre, 1, 1) productoLetra, COUNT(*) Total
+   FROM producto p
+   GROUP BY SUBSTRING(p.nombre, 1, 1)
+   ORDER BY SUBSTRING(p.nombre, 1, 1);
+   ```
+
+4. Devuelve un listado completo con los nombres de los productos y los proveedores en la misma columna
+
+   ```sql
+   SELECT DISTINCT CONCAT('Producto: ',nombre) Productos_Proveedores FROM producto
+   UNION ALL
+   SELECT DISTINCT CONCAT('Proveedor: ',proveedor) FROM producto;
+   ```
+
+5. Devuelve un listado del nombre y el precio de los productos en la misma columna y en otra columna la frecuencia que tiene cada uno de los datos de la columna de nombres y precios
+
+   ```sql
+   SELECT productos_precios, COUNT(*) as Total
+   FROM
+       (SELECT CONCAT('Producto: ',nombre) productos_precios FROM producto
+       UNION ALL
+       SELECT CONCAT('Precio: $',precio_venta) FROM producto) as newTable
+   GROUP BY productos_precios;
+   ```
+
+### 5 tips WHERE
+
+1. Devuelve un listado de las gamas que no han aparecen en ningun producto.
+
+   ```
+   SELECT g.* FROM gama_producto g
+   WHERE g.gama NOT IN (
+       SELECT p.gama FROM producto p
+       WHERE g.gama = p.gama
+   );
+   ```
+
+2. Devuelve un listado de las gamas que aparecen en algun producto.
+
+   ```
+   SELECT * FROM gama_producto g
+   WHERE (
+       SELECT COUNT(*)
+       FROM producto p
+       WHERE g.gama = p.gama
+   ) > 0;
+   ```
+
+3. Devuelve un listado con los productos que comiencen por la letra **A** ó **C**.
+
+   ```
+   SELECT * FROM producto
+   WHERE nombre RLIKE '^[AC]' ORDER BY nombre;
+   ```
+
+4. Devuelve un listado de las gamas que aparecen en algun producto y que el nombre del producto finaliza con la letra **M**.
+
+   ```
+   SELECT g.* FROM gama_producto g
+   WHERE g.gama IN (
+       SELECT p.gama FROM producto p
+       WHERE p.nombre LIKE '%M'
+   );
+   ```
+
+5. Devuelve un listado de los productos que su **nombre** comienza con la letra **H**.
+
+   ```
+   SELECT * FROM producto
+   WHERE SUBSTRING(nombre, 1, 1) = 'H';
+   ```
+
+### 5 tips UPDATE
+
+1. Actualiza los registros de la tabla `pagos` en su campo **total** y agregale **$1**.
+
+   ```
+   UPDATE pago SET total = total + 1;
+   ```
+
+2. Actualiza las **formas de pago** de la tabla `pagos` a su estado por defecto.
+
+   ```
+   UPDATE pago SET forma_pago = DEFAULT;
+   ```
+
+3. Actualiza los registros de gama en la tabla `pagos` para que se muestre la **gama** y la **descripción** correspondiente de esa gama.
+
+   ```
+   UPDATE producto p SET gama = (
+       SELECT CONCAT(p.gama,' ',g.descripcion_texto)
+       FROM gama_producto g
+       WHERE p.gama = g.gama
+   );
+   ```
+
+4. Actualiza el **nombre** de los productos a `Actualizado` sí su gama contiene letras **O**.
+
+   ```
+   UPDATE producto p SET nombre = 'Actualizado'
+   WHERE p.gama IN (
+       SELECT g.gama FROM gama_producto
+       WHERE g.gama LIKE '%o%'
+   );
+   ```
+
+5. Actualiza la tabla `productos` para que los clientes tambien sean los proveedores.
+
+   ```
+   UPDATE producto p
+   JOIN detalle_pedido dp ON p.codigo_producto = dp.codigo_producto
+   JOIN pedido pe ON dp.codigo_pedido = pe.codigo_pedido
+   JOIN cliente c ON pe.codigo_cliente = c.codigo_cliente
+   SET p.proveedor = c.nombre_cliente;
+   ```
+
+### 5 tips SELECT
+
+1. Crear una copia de datos de la tabla `gama_producto` y agregarle un nuevo campo `status` con el valor `Comprobado`.
+
+   ```
+   DROP TABLE IF EXISTS OTHER_TABLE;
+   CREATE TABLE OTHER_TABLE(
+       gama VARCHAR(50),
+       descripcion_texto TEXT,
+       descripcion_html TEXT,
+       imagen VARCHAR(256),
+       status VARCHAR(20)
+   );
+   INSERT INTO OTHER_TABLE (gama, descripcion_texto, descripcion_html, imagen, status)
+   SELECT gama, descripcion_texto, descripcion_html, imagen, 'Comprobado' AS status
+   FROM gama_producto;
+   ```
+
    
+
+2. Devuelve un listado del **nombre completo** de los empleados con su **identificador** unico.
+
+   ```
+   SELECT codigo_empleado,
+      CONCAT(nombre,' ',apellido1,' ',apellido2) AS empleado_fullname
+   FROM empleado;
+   ```
+
+   
+
+3. Devuelve un listado con el **nombre del cliente**, los **pagos realizados** y agrega una columna describiendo en que **categoria** se encuentra el pago sabiendo que sí el pago es inferior a **10000** se considera `Pago bajo`, entre **10000** y **20000** `Pago estable`, y mayores como `Pago alto`.
+
+   ```
+   SELECT DISTINCT c.nombre_cliente, total,
+   CASE WHEN total < 10000 THEN 'Pago bajo'
+   WHEN total >= 10000 AND total <= 20000 THEN 'Pago estable'
+   ELSE 'Pago alto' END AS categoria_pago FROM pago p
+   JOIN cliente c ON p.codigo_cliente = c.codigo_cliente
+   ORDER BY c.nombre_cliente;
+   ```
+
+   
+
+4. Devuelve un listado con el **codigo del cliente**, **nombre del cliente** y la **cantidad de pagos** que ha realizado, ten en cuenta que aquellos clientes que no han realizado pagos tambien deberan aparecer.
+
+   ```
+   SELECT c.codigo_cliente, c.nombre_cliente, (
+       SELECT COUNT(*) FROM pago p
+       WHERE p.codigo_cliente = c.codigo_cliente
+       ) AS cantidad_pagos
+   FROM cliente c;
+   ```
+
+   
+
+5. Devuelve un listado con el **codigo del cliente**, **nombre del cliente** y la **cantidad de pagos** que ha realizado, ten en cuenta que aquellos clientes que no han realizado pagos tambien deberan aparecer.
+
+   ```
+   SELECT codigo_cliente, nombre_cliente, totalPagado
+   FROM (
+       (SELECT c.codigo_cliente, c.nombre_cliente, SUM(p.total) AS totalPagado FROM pago p
+       JOIN cliente c ON p.codigo_cliente = c.codigo_cliente
+       GROUP BY codigo_cliente) AS subTable
+   ) WHERE totalPagado > 6000;
+   ```
+
+   
+
+6. Devuelve un listado con un **id virtual**, **codigo del cliente**, **nombre del cliente** y la **cantidad de pagos** que ha realizado, ten en cuenta que aquellos clientes que no han realizado pagos tambien deberan aparecer.
+
+   ```
+   SELECT ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS virtualId, codigo_cliente, nombre_cliente, totalPagado
+   FROM (
+       (SELECT c.codigo_cliente, c.nombre_cliente, SUM(p.total) AS totalPagado FROM pago p
+       JOIN cliente c ON p.codigo_cliente = c.codigo_cliente
+       GROUP BY codigo_cliente) AS subTable
+   ) WHERE totalPagado > 6000;
+   ```
+
