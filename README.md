@@ -41,6 +41,9 @@ Puedes copiar el script contenido dentro `jardineria.sql` y pegarlo en tu consol
 
 ## CONSULTAS
 
+<details>
+<summary>CONSULTAS DE UNA TABLA </summary>
+
 1. Devuelve un listado con el código de oficina y la ciudad donde hay oficinas.
 
    ```sql
@@ -70,8 +73,6 @@ Puedes copiar el script contenido dentro `jardineria.sql` y pegarlo en tu consol
    SELECT CONCAT_WS(' ',nombre,apellido1,apellido2) as nombre
    FROM empleado
    WHERE codigo_jefe IS NULL;
-   
-   
    ```
 
 5. Devuelve un listado con el nombre, apellidos y puesto de aquellos empleados que no sean representantes de ventas.
@@ -190,8 +191,9 @@ Puedes copiar el script contenido dentro `jardineria.sql` y pegarlo en tu consol
     SELECT * FROM cliente WHERE ciudad = 'Madrid'
     AND (codigo_empleado_rep_ventas = 11 OR codigo_empleado_rep_ventas = 30);
     ```
-
-## Consultas multitabla (Composición interna)
+</details>
+<details>
+<summary>CONSULTAS MULTITABLA(composicion interna)</summary>
 
 1. Obtén un listado con el nombre de cada cliente y el nombre y apellido de su representante de ventas.
 
@@ -394,9 +396,9 @@ Puedes copiar el script contenido dentro `jardineria.sql` y pegarlo en tu consol
     GROUP BY c.nombre_cliente;
     ```
 
-
-
-## Consultas multitabla (Composición externa)
+</details>
+<details>
+<summary>CONSULTAS MULTITABLA(composicion externa)</summary>
 
 1. Devuelve un listado que muestre solamente los clientes que no han realizado ningún pago.
 
@@ -511,7 +513,10 @@ Puedes copiar el script contenido dentro `jardineria.sql` y pegarlo en tu consol
     WHERE c.codigo_empleado_rep_ventas IS NULL;
     ```
 
-## Consultas de resumen
+</details>
+
+<details>
+<summary>CONSULTAS RESUMEN</summary>
 
 1. ¿Cuántos empleados hay en la compañía?
 
@@ -697,8 +702,10 @@ Puedes copiar el script contenido dentro `jardineria.sql` y pegarlo en tu consol
     GROUP BY YEAR(fecha_pago)
     ORDER BY YEAR(fecha_pago) ASC;
     ```
+</details>
 
-## Subconsultas
+<details>
+<summary>SUBCONSULTAS</summary>
 
 1. Devuelve el nombre del cliente con mayor límite de crédito.
 
@@ -752,419 +759,388 @@ Puedes copiar el script contenido dentro `jardineria.sql` y pegarlo en tu consol
        WHERE LOWER(CONCAT(nombre,' ', apellido1)) = 'alberto soria');
    ```
 
-## ALL y ANY
-
-1. Devuelve el nombre del cliente con mayor límite de crédito.
-
-   ```sql
-   SELECT c.nombre_cliente, c.limite_credito FROM cliente c
-   WHERE c.limite_credito >= ALL (
-       SELECT limite_credito
-       FROM cliente
-   );
-   ```
-
-2. Devuelve el nombre del producto que tenga el precio de venta más caro.
-
-   ```sql
-   SELECT p.nombre FROM producto p WHERE p.precio_venta >= ALL (
-       SELECT precio_venta
-       FROM producto
-   );
-   ```
-
-3. Devuelve el producto que menos unidades tiene en stock.
-
-   ```sql
-   SELECT * FROM producto p WHERE p.cantidad_en_stock <= ALL (
-       SELECT cantidad_en_stock
-       FROM producto
-   );
-   ```
-
-### IN y NOT IN
-
-1. Devuelve el nombre, apellido1 y cargo de los empleados que no representen a ningún cliente.
-
-   ```sql
-   SELECT nombre, apellido1, puesto FROM empleado
-   WHERE codigo_empleado IN (
-       SELECT codigo_empleado FROM empleado e
-       LEFT JOIN cliente c ON e.codigo_empleado = c.codigo_empleado_rep_ventas
-       WHERE c.codigo_empleado_rep_ventas IS NULL);
-   ```
-
-2. Devuelve un listado que muestre solamente los clientes que no han realizado ningún pago.
-
-   ```sql
-   SELECT * FROM cliente WHERE codigo_cliente IN (
-       SELECT c.codigo_cliente FROM cliente c
-       LEFT JOIN pago p ON c.codigo_cliente = p.codigo_cliente
-       WHERE p.codigo_cliente IS NULL);
-   ```
-
-3. Devuelve un listado que muestre solamente los clientes que sí han realizado algún pago.
-
-   ```sql
-   SELECT * FROM cliente WHERE codigo_cliente NOT IN (
-       SELECT c.codigo_cliente FROM cliente c
-       LEFT JOIN pago p ON c.codigo_cliente = p.codigo_cliente
-       WHERE p.codigo_cliente IS NULL);
-   ```
-
-4. Devuelve un listado de los productos que nunca han aparecido en un pedido.
-
-   ```sql
-   SELECT * FROM producto WHERE codigo_producto IN (
-       SELECT p.codigo_producto FROM producto p
-       LEFT JOIN detalle_pedido dp ON p.codigo_producto = dp.codigo_producto
-       WHERE dp.codigo_producto IS NULL);
-   ```
-
-5. Devuelve el nombre, apellidos, puesto y teléfono de la oficina de aquellos empleados que no sean representante de ventas de ningún cliente.
-
-   ```sql
-   SELECT nombre, apellido1, puesto, (
-       SELECT o.telefono FROM empleado e
-       JOIN oficina o ON e.codigo_oficina = o.codigo_oficina
-       WHERE e.codigo_empleado = empleado.codigo_empleado) AS telefono_oficina
-   FROM empleado WHERE codigo_empleado IN (
-       SELECT codigo_empleado FROM empleado e
-       LEFT JOIN cliente c ON e.codigo_empleado = c.codigo_empleado_rep_ventas
-       WHERE c.codigo_empleado_rep_ventas IS NULL);
-   ```
-
-6. Devuelve las oficinas donde **no trabajan** ninguno de los empleados que hayan sido los representantes de ventas de algún cliente que haya realizado la compra de algún producto de la gama `Frutales`.
-
-   ```sql
-   SELECT * FROM oficina WHERE codigo_oficina IN (
-       SELECT DISTINCT o.codigo_oficina FROM oficina o
-       JOIN empleado e ON o.codigo_oficina = e.codigo_oficina
-       JOIN cliente c ON e.codigo_empleado = c.codigo_empleado_rep_ventas
-       JOIN pedido p ON c.codigo_cliente = p.codigo_cliente
-       JOIN detalle_pedido dp ON p.codigo_pedido = dp.codigo_pedido
-       JOIN producto pro ON dp.codigo_producto = pro.codigo_producto
-       WHERE pro.gama != 'Frutales');
-   ```
-
-7. Devuelve un listado con los clientes que han realizado algún pedido pero no han realizado ningún pago.
-
-   ```sql
-   SELECT * FROM cliente WHERE codigo_cliente IN (
-       SELECT DISTINCT c.codigo_cliente FROM cliente c
-       LEFT JOIN pedido pe ON c.codigo_cliente = pe.codigo_cliente
-       LEFT JOIN pago p ON c.codigo_cliente = p.codigo_cliente
-       WHERE pe.codigo_cliente IS NOT NULL AND p.codigo_cliente IS NULL);
-   ```
-
-## EXISTS y NOT EXISTS
-
-1. Devuelve un listado que muestre solamente los clientes que no han realizado ningún pago.
-
-   ```sql
-   SELECT nombre_cliente
-   FROM cliente
-   WHERE NOT EXISTS (
-       SELECT codigo_cliente
-       FROM pago
-       WHERE cliente.codigo_cliente = pago.codigo_cliente)
-   ```
-
-2. Devuelve un listado que muestre solamente los clientes que sí han realizado algún pago.
-
-   ```sql
-   SELECT nombre_cliente
-   FROM cliente
-   WHERE EXISTS (
-       SELECT codigo_cliente
-       FROM pago
-       WHERE cliente.codigo_cliente = pago.codigo_cliente)
-   ```
-
-3. Devuelve un listado de los productos que nunca han aparecido en un pedido.
-
-   ```sql
-   SELECT *
-   FROM producto
-   WHERE NOT EXISTS (
-       SELECT *
-       FROM detalle_pedido
-       WHERE detalle_pedido.codigo_producto = producto.codigo_producto
-   )
-   ```
-
-4. Devuelve un listado de los productos que han aparecido en un pedido alguna vez.
-
-   ```sql
-   SELECT *
-   FROM producto
-   WHERE EXISTS (
-       SELECT *
-       FROM detalle_pedido
-       WHERE detalle_pedido.codigo_producto = producto.codigo_producto
-   )
-   ```
-
-## Consultas variadas
-
-1. Devuelve el listado de clientes indicando el nombre del cliente y cuántos pedidos ha realizado. Tenga en cuenta que pueden existir clientes que no han realizado ningún pedido.
-
-   ```sql
-   
-   ```
-
-2. Devuelve un listado con los nombres de los clientes y el total pagado por cada uno de ellos. Tenga en cuenta que pueden existir clientes que no han realizado ningún pago.
-
-   ```sql
-   
-   ```
-
-3. Devuelve el nombre de los clientes que hayan hecho pedidos en 2008 ordenados alfabéticamente de menor a mayor.
-
-   ```sql
-   
-   ```
-
-4. Devuelve el nombre del cliente, el nombre y primer apellido de su representante de ventas y el número de teléfono de la oficina del representante de ventas, de aquellos clientes que no hayan realizado ningún pago.
-
-   ```sql
-   
-   ```
-
-5. Devuelve el listado de clientes donde aparezca el nombre del cliente, el nombre y primer apellido de su representante de ventas y la ciudad donde está su oficina.
-
-   ```sql
-   
-   ```
-
-6. Devuelve el nombre, apellidos, puesto y teléfono de la oficina de aquellos empleados que no sean representante de ventas de ningún cliente.
-
-   ```sql
-   
-   ```
-
-7. Devuelve un listado indicando todas las ciudades donde hay oficinas y el número de empleados que tiene.
-
-   ```sql
-   
-   ```
-
-## Consultas Video
-
-### 5 Tips GROUP BY 
-
-1. Devuelve la gama y la cantidad de productos que existen por cada gama
-
-   ```sql
-   SELECT p.gama, COUNT(*) AS cantidad 
-   FROM producto p
-   JOIN gama_producto g ON p.gama = g.gama
-   GROUP BY p.gama;
-   ```
-
-2. Devuelve el proveedor con tipos de gamas que surte y que la cantidad de productos que sure sea mayor a 50 productos 
-
-   ```sql
-   SELECT p.proveedor, p.gama, COUNT(*) AS cantidad
-   FROM producto p
-   JOIN gama_producto g ON p.gama = g.gama
-   GROUP BY p.proveedor, p.gama
-   HAVING COUNT(*) > 50;
-   ```
-
-3. Devuelve la cantidad de productos que existen por la primera letra del nombre del producto y ordenelos en orden alfabetico:
-
-   ```sql
-   SELECT SUBSTRING(p.nombre, 1, 1) productoLetra, COUNT(*) Total
-   FROM producto p
-   GROUP BY SUBSTRING(p.nombre, 1, 1)
-   ORDER BY SUBSTRING(p.nombre, 1, 1);
-   ```
-
-4. Devuelve un listado completo con los nombres de los productos y los proveedores en la misma columna
-
-   ```sql
-   SELECT DISTINCT CONCAT('Producto: ',nombre) Productos_Proveedores FROM producto
-   UNION ALL
-   SELECT DISTINCT CONCAT('Proveedor: ',proveedor) FROM producto;
-   ```
-
-5. Devuelve un listado del nombre y el precio de los productos en la misma columna y en otra columna la frecuencia que tiene cada uno de los datos de la columna de nombres y precios
-
-   ```sql
-   SELECT productos_precios, COUNT(*) as Total
-   FROM
-       (SELECT CONCAT('Producto: ',nombre) productos_precios FROM producto
-       UNION ALL
-       SELECT CONCAT('Precio: $',precio_venta) FROM producto) as newTable
-   GROUP BY productos_precios;
-   ```
-
-### 5 tips WHERE
-
-1. Devuelve un listado de los productos de los cuales no se han hecho pedidos
-
-   ```sql
-   SELECT p.nombre, p.codigo_producto
-   FROM producto p
-   WHERE p.codigo_producto NOT IN(
-       SELECT dp.codigo_producto
-       FROM detalle_pedido dp
-       WHERE p.codigo_producto = dp.codigo_producto
-   )
-   GROUP BY p.nombre, p.codigo_producto;
-   ```
-
-2. Devuelve un listado de los clientes que han hecho pedidos
-
-   ```sql
-   select c.nombre_cliente,c.codigo_cliente from cliente c 
-   where(
-       Select COUNT(*) from pedido p
-       where c.codigo_cliente = p.codigo_cliente
-   )>0;
-   ```
-
-3. Devuelve un listado con los productos que comiencen de la letra **A** a la  **C**.
-
-   ```sql
-   SELECT * FROM producto
-   WHERE nombre RLIKE '^[A-C]' ORDER BY nombre;
-   ```
-
-4. Devuelve un listado de las gamas que aparecen en algun producto y que el nombre del producto finaliza con la letra **A**.
-
-   ```sql
-   SELECT * FROM producto
-   WHERE nombre RLIKE '[A]$' ORDER BY nombre;
-   ```
-
-5. Devuelve un listado de los productos que su **nombre** comienza con la letra **H**.
-
-   ```sql
-   SELECT * FROM cliente
-   WHERE SUBSTRING(nombre_cliente, 1, 1) = 'A';
-   ```
-
-### 5 tips UPDATE
-
-1. Actualiza los registros de la tabla `pagos` en su campo **total** y agregale **$0.99**.
-
-   ```sql
-   UPDATE pago SET total = total + 0.99;
-   ```
-
-2. Actualiza las **formas de pago** de la tabla `pagos` a su estado por defecto.
-
-   ```sql
-   UPDATE pago SET forma_pago = DEFAULT;
-   ```
-
-3. Actualiza los registros de gama en la tabla `pagos` para que se muestre la **gama** y la **descripción** correspondiente de esa gama.
-
-   ```sql
-   UPDATE producto p SET gama = (
-       SELECT CONCAT(p.gama,': ',g.descripcion_texto)
-       FROM gama_producto g
-       WHERE p.gama = g.gama
-   );
-   ```
-
-4. Actualiza el **nombre** de los productos a `Actualizado` sí su gama contiene letras **a**.
-
-   ```sql
-   UPDATE producto p SET nombre = 'Actualizado'
-   WHERE p.gama IN (
-       SELECT g.gama FROM gama_producto
-       WHERE g.gama LIKE '%a%'
-   );
-   ```
-
-5. Actualiza la tabla `productos` para que los clientes tambien sean los proveedores.
-
-   ```sql
-   UPDATE producto p
-   JOIN detalle_pedido dp ON p.codigo_producto = dp.codigo_producto
-   JOIN pedido pe ON dp.codigo_pedido = pe.codigo_pedido
-   JOIN cliente c ON pe.codigo_cliente = c.codigo_cliente
-   SET p.proveedor = c.nombre_cliente;
-   ```
-
-### 5 tips SELECT
-
-1. Crear una copia de datos de la tabla `gama_producto` y agregarle un nuevo campo `status` con el valor `Comprobado`.
-
-   ```sql
-   DROP TABLE IF EXISTS OTHER_TABLE;
-   CREATE TABLE OTHER_TABLE(
-       gama VARCHAR(50),
-       descripcion_texto TEXT,
-       descripcion_html TEXT,
-       imagen VARCHAR(256),
-       status VARCHAR(20)
-   );
-   INSERT INTO OTHER_TABLE (gama, descripcion_texto, descripcion_html, imagen, status)
-   SELECT gama, descripcion_texto, descripcion_html, imagen, 'Comprobado' AS status
-   FROM gama_producto;
-   ```
-
-   
-
-2. Devuelve un listado del **nombre completo** de los empleados con su **identificador** unico.
-
-   ```sql
-   SELECT codigo_empleado,
-      CONCAT(nombre,' ',apellido1,' ',apellido2) AS empleado_fullname
-   FROM empleado;
-   ```
-
-   
-
-3. Devuelve un listado con el **nombre del cliente**, los **pagos realizados** y agrega una columna describiendo en que **categoria** se encuentra el pago sabiendo que sí el pago es inferior a **10000** se considera `Pago bajo`, entre **10000** y **20000** `Pago estable`, y mayores como `Pago alto`.
-
-   ```sql
-   SELECT DISTINCT c.nombre_cliente, total,
-   CASE WHEN total < 10000 THEN 'Pago bajo'
-   WHEN total >= 10000 AND total <= 20000 THEN 'Pago estable'
-   ELSE 'Pago alto' END AS categoria_pago FROM pago p
-   JOIN cliente c ON p.codigo_cliente = c.codigo_cliente
-   ORDER BY c.nombre_cliente;
-   ```
-
-   
-
-4. Devuelve un listado con el **codigo del cliente**, **nombre del cliente** y la **cantidad de pagos** que ha realizado, ten en cuenta que aquellos clientes que no han realizado pagos tambien deberan aparecer.
-
-   ```sql
-   SELECT c.codigo_cliente, c.nombre_cliente, (
-       SELECT COUNT(*) FROM pago p
-       WHERE p.codigo_cliente = c.codigo_cliente
-       ) AS cantidad_pagos
-   FROM cliente c;
-   ```
-
-   
-
-5. Devuelve un listado con el **codigo del cliente**, **nombre del cliente** y la **cantidad de pagos** que ha realizado, ten en cuenta que aquellos clientes que no han realizado pagos tambien deberan aparecer.
-
-   ```sql
-   SELECT codigo_cliente, nombre_cliente, totalPagado
-   FROM (
-       (SELECT c.codigo_cliente, c.nombre_cliente, SUM(p.total) AS totalPagado FROM pago p
-       JOIN cliente c ON p.codigo_cliente = c.codigo_cliente
-       GROUP BY codigo_cliente) AS subTable
-   ) WHERE totalPagado > 6000;
-   ```
-
-   
-
-6. Devuelve un listado con un **id virtual**, **codigo del cliente**, **nombre del cliente** y la **cantidad de pagos** que ha realizado, ten en cuenta que aquellos clientes que no han realizado pagos tambien deberan aparecer.
-
-   ```sql
-   SELECT ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS virtualId, codigo_cliente, nombre_cliente, totalPagado
-   FROM (
-       (SELECT c.codigo_cliente, c.nombre_cliente, SUM(p.total) AS totalPagado FROM pago p
-       JOIN cliente c ON p.codigo_cliente = c.codigo_cliente
-       GROUP BY codigo_cliente) AS subTable
-   ) WHERE totalPagado > 6000;
-   ```
+   <details>
+   <summary>ALL y ANY</summary>
+
+   1. Devuelve el nombre del cliente con mayor límite de crédito.
+
+      ```sql
+      SELECT c.nombre_cliente, c.limite_credito FROM cliente c
+      WHERE c.limite_credito >= ALL (
+         SELECT limite_credito
+         FROM cliente
+      );
+      ```
+
+   2. Devuelve el nombre del producto que tenga el precio de venta más caro.
+
+      ```sql
+      SELECT p.nombre FROM producto p WHERE p.precio_venta >= ALL (
+         SELECT precio_venta
+         FROM producto
+      );
+      ```
+
+   3. Devuelve el producto que menos unidades tiene en stock.
+
+      ```sql
+      SELECT * FROM producto p WHERE p.cantidad_en_stock <= ALL (
+         SELECT cantidad_en_stock
+         FROM producto
+      );
+      ```
+   </details>
+   <details>
+   <summary>IN y NOT IN</summary>
+
+   1. Devuelve el nombre, apellido1 y cargo de los empleados que no representen a ningún cliente.
+
+      ```sql
+      SELECT nombre, apellido1, puesto FROM empleado
+      WHERE codigo_empleado IN (
+         SELECT codigo_empleado FROM empleado e
+         LEFT JOIN cliente c ON e.codigo_empleado = c.codigo_empleado_rep_ventas
+         WHERE c.codigo_empleado_rep_ventas IS NULL);
+      ```
+
+   2. Devuelve un listado que muestre solamente los clientes que no han realizado ningún pago.
+
+      ```sql
+      SELECT * FROM cliente WHERE codigo_cliente IN (
+         SELECT c.codigo_cliente FROM cliente c
+         LEFT JOIN pago p ON c.codigo_cliente = p.codigo_cliente
+         WHERE p.codigo_cliente IS NULL);
+      ```
+
+   3. Devuelve un listado que muestre solamente los clientes que sí han realizado algún pago.
+
+      ```sql
+      SELECT * FROM cliente WHERE codigo_cliente NOT IN (
+         SELECT c.codigo_cliente FROM cliente c
+         LEFT JOIN pago p ON c.codigo_cliente = p.codigo_cliente
+         WHERE p.codigo_cliente IS NULL);
+      ```
+
+   4. Devuelve un listado de los productos que nunca han aparecido en un pedido.
+
+      ```sql
+      SELECT * FROM producto WHERE codigo_producto IN (
+         SELECT p.codigo_producto FROM producto p
+         LEFT JOIN detalle_pedido dp ON p.codigo_producto = dp.codigo_producto
+         WHERE dp.codigo_producto IS NULL);
+      ```
+
+   5. Devuelve el nombre, apellidos, puesto y teléfono de la oficina de aquellos empleados que no sean representante de ventas de ningún cliente.
+
+      ```sql
+      SELECT nombre, apellido1, puesto, (
+         SELECT o.telefono FROM empleado e
+         JOIN oficina o ON e.codigo_oficina = o.codigo_oficina
+         WHERE e.codigo_empleado = empleado.codigo_empleado) AS telefono_oficina
+      FROM empleado WHERE codigo_empleado IN (
+         SELECT codigo_empleado FROM empleado e
+         LEFT JOIN cliente c ON e.codigo_empleado = c.codigo_empleado_rep_ventas
+         WHERE c.codigo_empleado_rep_ventas IS NULL);
+      ```
+
+   6. Devuelve las oficinas donde **no trabajan** ninguno de los empleados que hayan sido los representantes de ventas de algún cliente que haya realizado la compra de algún producto de la gama `Frutales`.
+
+      ```sql
+      SELECT * FROM oficina WHERE codigo_oficina IN (
+         SELECT DISTINCT o.codigo_oficina FROM oficina o
+         JOIN empleado e ON o.codigo_oficina = e.codigo_oficina
+         JOIN cliente c ON e.codigo_empleado = c.codigo_empleado_rep_ventas
+         JOIN pedido p ON c.codigo_cliente = p.codigo_cliente
+         JOIN detalle_pedido dp ON p.codigo_pedido = dp.codigo_pedido
+         JOIN producto pro ON dp.codigo_producto = pro.codigo_producto
+         WHERE pro.gama != 'Frutales');
+      ```
+
+   7. Devuelve un listado con los clientes que han realizado algún pedido pero no han realizado ningún pago.
+
+      ```sql
+      SELECT * FROM cliente WHERE codigo_cliente IN (
+         SELECT DISTINCT c.codigo_cliente FROM cliente c
+         LEFT JOIN pedido pe ON c.codigo_cliente = pe.codigo_cliente
+         LEFT JOIN pago p ON c.codigo_cliente = p.codigo_cliente
+         WHERE pe.codigo_cliente IS NOT NULL AND p.codigo_cliente IS NULL);
+      ```
+   </details>
+   <details>
+   <summary>EXISTS y NOT EXISTS</summary>
+
+   1. Devuelve un listado que muestre solamente los clientes que no han realizado ningún pago.
+
+      ```sql
+      SELECT nombre_cliente
+      FROM cliente
+      WHERE NOT EXISTS (
+         SELECT codigo_cliente
+         FROM pago
+         WHERE cliente.codigo_cliente = pago.codigo_cliente)
+      ```
+
+   2. Devuelve un listado que muestre solamente los clientes que sí han realizado algún pago.
+
+      ```sql
+      SELECT nombre_cliente
+      FROM cliente
+      WHERE EXISTS (
+         SELECT codigo_cliente
+         FROM pago
+         WHERE cliente.codigo_cliente = pago.codigo_cliente)
+      ```
+
+   3. Devuelve un listado de los productos que nunca han aparecido en un pedido.
+
+      ```sql
+      SELECT *
+      FROM producto
+      WHERE NOT EXISTS (
+         SELECT *
+         FROM detalle_pedido
+         WHERE detalle_pedido.codigo_producto = producto.codigo_producto
+      )
+      ```
+
+   4. Devuelve un listado de los productos que han aparecido en un pedido alguna vez.
+
+      ```sql
+      SELECT *
+      FROM producto
+      WHERE EXISTS (
+         SELECT *
+         FROM detalle_pedido
+         WHERE detalle_pedido.codigo_producto = producto.codigo_producto
+      )
+      ```
+   </details>
+</details>
+<details>
+<summary>CONSULTAS VIDEO</summary>
+
+   <details>
+   <summary>5 Tips GROUP BY</summary>
+
+   1. Devuelve la gama y la cantidad de productos que existen por cada gama
+
+      ```sql
+      SELECT p.gama, COUNT(*) AS cantidad 
+      FROM producto p
+      JOIN gama_producto g ON p.gama = g.gama
+      GROUP BY p.gama;
+      ```
+
+   2. Devuelve el proveedor con tipos de gamas que surte y que la cantidad de productos que sure sea mayor a 50 productos 
+
+      ```sql
+      SELECT p.proveedor, p.gama, COUNT(*) AS cantidad
+      FROM producto p
+      JOIN gama_producto g ON p.gama = g.gama
+      GROUP BY p.proveedor, p.gama
+      HAVING COUNT(*) > 50;
+      ```
+
+   3. Devuelve la cantidad de productos que existen por la primera letra del nombre del producto y ordenelos en orden alfabetico:
+
+      ```sql
+      SELECT SUBSTRING(p.nombre, 1, 1) productoLetra, COUNT(*) Total
+      FROM producto p
+      GROUP BY SUBSTRING(p.nombre, 1, 1)
+      ORDER BY SUBSTRING(p.nombre, 1, 1);
+      ```
+
+   4. Devuelve un listado completo con los nombres de los productos y los proveedores en la misma columna
+
+      ```sql
+      SELECT DISTINCT CONCAT('Producto: ',nombre) Productos_Proveedores FROM producto
+      UNION ALL
+      SELECT DISTINCT CONCAT('Proveedor: ',proveedor) FROM producto;
+      ```
+
+   5. Devuelve un listado del nombre y el precio de los productos en la misma columna y en otra columna la frecuencia que tiene cada uno de los datos de la columna de nombres y precios
+
+      ```sql
+      SELECT productos_precios, COUNT(*) as Total
+      FROM
+         (SELECT CONCAT('Producto: ',nombre) productos_precios FROM producto
+         UNION ALL
+         SELECT CONCAT('Precio: $',precio_venta) FROM producto) as newTable
+      GROUP BY productos_precios;
+      ```
+
+   </details>
+
+   <details>
+   <summary>5 tips WHERE</summary>
+
+   1. Devuelve un listado de los productos de los cuales no se han hecho pedidos
+
+      ```sql
+      SELECT p.nombre, p.codigo_producto
+      FROM producto p
+      WHERE p.codigo_producto NOT IN(
+         SELECT dp.codigo_producto
+         FROM detalle_pedido dp
+         WHERE p.codigo_producto = dp.codigo_producto
+      )
+      GROUP BY p.nombre, p.codigo_producto;
+      ```
+
+   2. Devuelve un listado de los clientes que han hecho pedidos
+
+      ```sql
+      select c.nombre_cliente,c.codigo_cliente from cliente c 
+      where(
+         Select COUNT(*) from pedido p
+         where c.codigo_cliente = p.codigo_cliente
+      )>0;
+      ```
+
+   3. Devuelve un listado con los productos que comiencen de la letra **A** a la  **C**.
+
+      ```sql
+      SELECT * FROM producto
+      WHERE nombre RLIKE '^[A-C]' ORDER BY nombre;
+      ```
+
+   4. Devuelve un listado de las gamas que aparecen en algun producto y que el nombre del producto finaliza con la letra **A**.
+
+      ```sql
+      SELECT * FROM producto
+      WHERE nombre RLIKE '[A]$' ORDER BY nombre;
+      ```
+
+   5. Devuelve un listado de los productos que su **nombre** comienza con la letra **H**.
+
+      ```sql
+      SELECT * FROM cliente
+      WHERE SUBSTRING(nombre_cliente, 1, 1) = 'A';
+      ```
+   </details>
+   <details>
+   <summary>5 tips UPDATE</summary>
+
+   1. Actualiza los registros de la tabla `pagos` en su campo **total** y agregale **$0.99**.
+
+      ```sql
+      UPDATE pago SET total = total + 0.99;
+      ```
+
+   2. Actualiza las **formas de pago** de la tabla `pagos` a su estado por defecto.
+
+      ```sql
+      UPDATE pago SET forma_pago = DEFAULT;
+      ```
+
+   3. Actualiza los registros de gama en la tabla `pagos` para que se muestre la **gama** y la **descripción** correspondiente de esa gama.
+
+      ```sql
+      UPDATE producto p SET gama = (
+         SELECT CONCAT(p.gama,': ',g.descripcion_texto)
+         FROM gama_producto g
+         WHERE p.gama = g.gama
+      );
+      ```
+
+   4. Actualiza el **nombre** de los productos a `Actualizado` sí su gama contiene letras **a**.
+
+      ```sql
+      UPDATE producto p SET nombre = 'Actualizado'
+      WHERE p.gama IN (
+         SELECT g.gama FROM gama_producto
+         WHERE g.gama LIKE '%a%'
+      );
+      ```
+
+   5. Actualiza la tabla `productos` para que los clientes tambien sean los proveedores.
+
+      ```sql
+      UPDATE producto p
+      JOIN detalle_pedido dp ON p.codigo_producto = dp.codigo_producto
+      JOIN pedido pe ON dp.codigo_pedido = pe.codigo_pedido
+      JOIN cliente c ON pe.codigo_cliente = c.codigo_cliente
+      SET p.proveedor = c.nombre_cliente;
+      ```
+   </details>
+   <details>
+   <summary>5 tips SELECT</summary>
+
+   1. Crear una copia de datos de la tabla `gama_producto` y agregarle un nuevo campo `status` con el valor `Comprobado`.
+
+      ```sql
+      DROP TABLE IF EXISTS OTHER_TABLE;
+      CREATE TABLE OTHER_TABLE(
+         gama VARCHAR(50),
+         descripcion_texto TEXT,
+         descripcion_html TEXT,
+         imagen VARCHAR(256),
+         status VARCHAR(20)
+      );
+      INSERT INTO OTHER_TABLE (gama, descripcion_texto, descripcion_html, imagen, status)
+      SELECT gama, descripcion_texto, descripcion_html, imagen, 'Comprobado' AS status
+      FROM gama_producto;
+      ```
+
+      
+
+   2. Devuelve un listado del **nombre completo** de los empleados con su **identificador** unico.
+
+      ```sql
+      SELECT codigo_empleado,
+         CONCAT(nombre,' ',apellido1,' ',apellido2) AS empleado_fullname
+      FROM empleado;
+      ```
+
+      
+
+   3. Devuelve un listado con el **nombre del cliente**, los **pagos realizados** y agrega una columna describiendo en que **categoria** se encuentra el pago sabiendo que sí el pago es inferior a **10000** se considera `Pago bajo`, entre **10000** y **20000** `Pago estable`, y mayores como `Pago alto`.
+
+      ```sql
+      SELECT DISTINCT c.nombre_cliente, total,
+      CASE WHEN total < 10000 THEN 'Pago bajo'
+      WHEN total >= 10000 AND total <= 20000 THEN 'Pago estable'
+      ELSE 'Pago alto' END AS categoria_pago FROM pago p
+      JOIN cliente c ON p.codigo_cliente = c.codigo_cliente
+      ORDER BY c.nombre_cliente;
+      ```
+
+      
+
+   4. Devuelve un listado con el **codigo del cliente**, **nombre del cliente** y la **cantidad de pagos** que ha realizado, ten en cuenta que aquellos clientes que no han realizado pagos tambien deberan aparecer.
+
+      ```sql
+      SELECT c.codigo_cliente, c.nombre_cliente, (
+         SELECT COUNT(*) FROM pago p
+         WHERE p.codigo_cliente = c.codigo_cliente
+         ) AS cantidad_pagos
+      FROM cliente c;
+      ```
+
+      
+
+   5. Devuelve un listado con el **codigo del cliente**, **nombre del cliente** y la **cantidad de pagos** que ha realizado, ten en cuenta que aquellos clientes que no han realizado pagos tambien deberan aparecer.
+
+      ```sql
+      SELECT codigo_cliente, nombre_cliente, totalPagado
+      FROM (
+         (SELECT c.codigo_cliente, c.nombre_cliente, SUM(p.total) AS totalPagado FROM pago p
+         JOIN cliente c ON p.codigo_cliente = c.codigo_cliente
+         GROUP BY codigo_cliente) AS subTable
+      ) WHERE totalPagado > 6000;
+      ```
+
+      
+
+   6. Devuelve un listado con un **id virtual**, **codigo del cliente**, **nombre del cliente** y la **cantidad de pagos** que ha realizado, ten en cuenta que aquellos clientes que no han realizado pagos tambien deberan aparecer.
+
+      ```sql
+      SELECT ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS virtualId, codigo_cliente, nombre_cliente, totalPagado
+      FROM (
+         (SELECT c.codigo_cliente, c.nombre_cliente, SUM(p.total) AS totalPagado FROM pago p
+         JOIN cliente c ON p.codigo_cliente = c.codigo_cliente
+         GROUP BY codigo_cliente) AS subTable
+      ) WHERE totalPagado > 6000;
+      ```
+   </details>
+</details>
