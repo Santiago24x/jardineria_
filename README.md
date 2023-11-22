@@ -968,6 +968,13 @@ Puedes copiar el script contenido dentro `jardineria.sql` y pegarlo en tu consol
          SELECT CONCAT('Precio: $',precio_venta) FROM producto) as newTable
       GROUP BY productos_precios;
       ```
+   6. Devuelve un listado  que muestre el nombre del producto, la categoría a la que pertenece y el total de productos en cada categoría.
+      ```sql
+      SELECT ifnull(p.nombre,'Total') AS nombreProducto,p.gama,count(*) AS total
+      FROM producto p 
+      JOIN gama_producto g on p.gama = g.gama
+      GROUP BY p.gama, p.nombre WITH ROLLUP;
+      ```
 
    </details>
 
